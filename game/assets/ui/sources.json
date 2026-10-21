@@ -1,0 +1,23 @@
+{
+  "weapon_ar.png": "https://nkas.pages.dev/common/ui/icn_weapon_ar.png",
+  "weapon_mg.png": "https://nkas.pages.dev/common/ui/icn_weapon_mg.png",
+  "weapon_rl.png": "https://nkas.pages.dev/common/ui/icn_weapon_rl.png",
+  "weapon_sg.png": "https://nkas.pages.dev/common/ui/icn_weapon_sg.png",
+  "weapon_smg.png": "https://nkas.pages.dev/common/ui/icn_weapon_smg.png",
+  "weapon_sr.png": "https://nkas.pages.dev/common/ui/icn_weapon_sr.png",
+  "burst_1.png": "https://nkas.pages.dev/common/ui/hex_icons/icn_burst1.png",
+  "burst_2.png": "https://nkas.pages.dev/common/ui/hex_icons/icn_burst2.png",
+  "burst_3.png": "https://nkas.pages.dev/common/ui/hex_icons/icn_burst3.png",
+  "c010_00.png": "https://raw.githubusercontent.com/Nikke-db/Nikke-db.github.io/main/images/sprite/si_c010_00_s.png",
+  "c011_00.png": "https://raw.githubusercontent.com/Nikke-db/Nikke-db.github.io/main/images/sprite/si_c011_00_s.png",
+  "c012_00.png": "https://raw.githubusercontent.com/Nikke-db/Nikke-db.github.io/main/images/sprite/si_c012_00_s.png",
+  "c013_00.png": "https://raw.githubusercontent.com/Nikke-db/Nikke-db.github.io/main/images/sprite/si_c013_00_s.png",
+  "c020_00.png": "https://raw.githubusercontent.com/Nikke-db/Nikke-db.github.io/main/images/sprite/si_c020_00_s.png",
+  "c022_00.png": "https://raw.githubusercontent.com/Nikke-db/Nikke-db.github.io/main/images/sprite/si_c022_00_s.png",
+  "weapon_ar_full.png": "https://raw.githubusercontent.com/Nikke-db/Nikke-db.github.io/main/images/gun/full/icn_weapon_ar_full.png",
+  "weapon_sg_full.png": "https://raw.githubusercontent.com/Nikke-db/Nikke-db.github.io/main/images/gun/full/icn_weapon_sg_full.png",
+  "weapon_rl_full.png": "https://raw.githubusercontent.com/Nikke-db/Nikke-db.github.io/main/images/gun/full/icn_weapon_rl_full.png",
+  "weapon_mg_full.png": "https://raw.githubusercontent.com/Nikke-db/Nikke-db.github.io/main/images/gun/full/icn_weapon_mg_full.png",
+  "weapon_sr_full.png": "https://raw.githubusercontent.com/Nikke-db/Nikke-db.github.io/main/images/gun/full/icn_weapon_sr_full.png",
+  "weapon_smg_full.png": "https://raw.githubusercontent.com/Nikke-db/Nikke-db.github.io/main/images/gun/full/icn_weapon_smg_full.png"
+}

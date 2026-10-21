@@ -1,0 +1,9 @@
+game/.godot/
+build/
+*.log
+__pycache__/
+assets/nkas-chibi/
+graphify-out/
+.agents/
+.codex/
+.aws/
