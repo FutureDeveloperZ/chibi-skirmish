@@ -249,7 +249,7 @@ func refresh_selection() -> void:
 	var index: int = game.preferences.values.character
 	apply_palette(index)
 	preview.set_character(index)
-	preview.rotation.y = deg_to_rad(120.0)
+	preview.rotation.y = deg_to_rad(210.0)
 	selected_name.text = Rules.NAMES[index]
 	selected_weapon.text = WEAPONS[index] + "  /  Drag to rotate"
 	selected_hint.text = "Selected for your next match" if game.playing else "Ready for deployment"

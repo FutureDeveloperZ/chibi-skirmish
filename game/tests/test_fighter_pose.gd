@@ -50,11 +50,39 @@ func run() -> void:
 		var actor: Dictionary = simulation.actors[slot]
 		actor.p = Vector2((slot - 2.5) * 3.3, -5)
 		actor.move = Vector2.ZERO
-		for direction in [Vector2.RIGHT, Vector2.UP, Vector2.LEFT, Vector2.DOWN]:
+		for heading_index in range(8):
+			var direction := Vector2.from_angle(heading_index * TAU / 8.0)
 			actor.aim = direction
-			fighter.update_state(actor, 1.0, true)
-			var forward := -fighter.model.global_basis.z.normalized()
-			check(forward.dot(Vector3(direction.x, 0, direction.y)) > 0.999, "%s must face its aim" % Rules.NAMES[slot])
+			for clip in ["idle", "run", "shot", "run_shot"]:
+				actor.move = direction if clip in ["run", "run_shot"] else Vector2.ZERO
+				actor.fired = 0.16 if clip in ["shot", "run_shot"] else 0.0
+				actor.fire_cd = 0.0
+				for frame in range(60):
+					fighter.update_state(actor, 1.0 / 60.0, true)
+					var skeleton: Skeleton3D = fighter.aim_skeleton
+					var barrel: Vector3 = (skeleton.global_basis * skeleton.get_bone_global_pose(skeleton.find_bone("Bip001 Prop1")).basis).y
+					if clip == "run":
+						var eyes := (skeleton.get_bone_global_pose(skeleton.find_bone("eyeL_bone01")).origin + skeleton.get_bone_global_pose(skeleton.find_bone("eyeR_bone01")).origin) * 0.5
+						barrel = skeleton.global_basis * (eyes - skeleton.get_bone_global_pose(skeleton.find_bone("Bip001 Head")).origin)
+					var forward := Vector3(barrel.x, 0, barrel.z).normalized()
+					if frame >= 30:
+						check(forward.dot(Vector3(direction.x, 0, direction.y)) > 0.999, "%s %s animated pose must face its aim" % [Rules.NAMES[slot], clip])
+		# Exercise multiple running/shooting cycles, not just the selected clip name.
+		actor.move = Vector2.RIGHT
+		actor.fired = 0.16
+		var knee := fighter.aim_skeleton.find_bone("Bip001 L Calf")
+		var previous := fighter.aim_skeleton.get_bone_pose_rotation(knee)
+		var leg_motion := 0.0
+		for frame in range(120):
+			fighter.update_state(actor, 1.0 / 60.0, true)
+			var pose := fighter.aim_skeleton.get_bone_pose_rotation(knee)
+			leg_motion += previous.angle_to(pose)
+			previous = pose
+		check(fighter.current_clip == "run_shot" and leg_motion > 1.0, "%s must keep stepping while shooting" % Rules.NAMES[slot])
+		actor.move = Vector2.ZERO
+		actor.fired = 0.0
+		actor.fire_cd = 0.0
+		fighter.update_state(actor, 1.0, true)
 		fighter.animation.seek(0.0, true)
 		check(floor_height(fighter) > 0.02, "%s idle pose must stand above the floor" % Rules.NAMES[slot])
 		var heading: float = fighter.model.rotation.y
