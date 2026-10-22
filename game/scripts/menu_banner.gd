@@ -1,5 +1,6 @@
 extends Button
 
+var accent := Color("ff183c")
 var caption := ""
 var subtitle := ""
 var badge := ""
@@ -20,10 +21,10 @@ func _draw() -> void:
 	var shadow := PackedVector2Array()
 	for point in points:
 		shadow.append(point + Vector2(10, 12))
-	draw_colored_polygon(shadow, Color("ff183c"))
+	draw_colored_polygon(shadow, accent)
 	draw_colored_polygon(points, Color("faf4e8") if active else Color("09090d"))
 	var ink := Color("09090d") if active else Color("faf4e8")
 	draw_string(display_font, Vector2(24, h * 0.62), caption, HORIZONTAL_ALIGNMENT_LEFT, -1, 52, ink)
-	draw_string(display_font, Vector2(28, h - 10), subtitle, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("ff183c") if active else Color("ded8cd"))
+	draw_string(display_font, Vector2(28, h - 10), subtitle, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, accent if active else Color("ded8cd"))
 	draw_circle(Vector2(w - 38, h * 0.48), 20, ink)
 	draw_string(display_font, Vector2(w - 46, h * 0.48 + 8), badge, HORIZONTAL_ALIGNMENT_LEFT, -1, 23, Color("09090d") if not active else Color("faf4e8"))

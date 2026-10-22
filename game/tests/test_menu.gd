@@ -53,6 +53,8 @@ func run() -> void:
 		menu.library_buttons[character].pressed.emit()
 		await process_frame
 		check(game.preferences.values.character == character, "Library click must update the selected character")
+		check(menu.accent == menu.PALETTES[character] and menu.backdrop.color == menu.accent.darkened(0.15), "Character selection must recolor the backdrop")
+		check(menu.navigation_buttons.start.accent == menu.accent, "Menu banners must use the selected character palette")
 		check(menu.preview.character == character, "Library click must update the 3D preview")
 		check(menu.selected_name.text == game.Rules.NAMES[character], "The preview name must match the model")
 		check(menu.library_buttons[character].button_pressed, "The chosen card must stay highlighted")

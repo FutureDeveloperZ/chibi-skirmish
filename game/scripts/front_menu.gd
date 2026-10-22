@@ -3,11 +3,16 @@ extends Control
 const Rules = preload("res://scripts/match.gd")
 const Fighter = preload("res://scripts/fighter.gd")
 const GOLD := Color("ff183c")
+const PALETTES := [Color("ff183c"), Color("25c6e8"), Color("f5be38"), Color("8f87ed"), Color("88b968"), Color("ec83ba")]
 const WHITE := Color("e8edf0")
 const MUTED := Color("c7bfc0")
 const WEAPONS := ["Assault rifle", "Shotgun", "Rocket launcher", "Machine gun", "Sniper rifle", "Submachine gun"]
 var game: Node3D
 var hud: Control
+var backdrop: ColorRect
+var accent := PALETTES[0]
+var accent_labels: Array[Label] = []
+var accent_buttons: Array[Button] = []
 var design: Control
 var screen := "home"
 var pages: Dictionary = {}
@@ -32,7 +37,7 @@ func setup(owner_hud: Control, owner_game: Node3D) -> void:
 	game = owner_game
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	var backdrop := ColorRect.new()
+	backdrop = ColorRect.new()
 	backdrop.color = Color("d80d32")
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -93,6 +98,8 @@ func label(parent: Node, text: String, point: Vector2, size_px: int, color: Colo
 	node.add_theme_color_override("font_color", color)
 	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(node)
+	if color == GOLD:
+		accent_labels.append(node)
 	return node
 
 
@@ -102,6 +109,8 @@ func action(parent: Node, text: String, rect: Rect2, color: Color, callback: Cal
 	node.size = rect.size
 	node.add_theme_font_override("font", hud.display_font)
 	node.add_theme_constant_override("outline_size", 0)
+	if color == GOLD:
+		accent_buttons.append(node)
 	parent.add_child(node)
 	return node
 
@@ -216,6 +225,7 @@ func choose_character(index: int) -> void:
 
 func refresh_selection() -> void:
 	var index: int = game.preferences.values.character
+	apply_palette(index)
 	preview.set_character(index)
 	preview.rotation.y = deg_to_rad(120.0)
 	selected_name.text = Rules.NAMES[index]
@@ -223,7 +233,7 @@ func refresh_selection() -> void:
 	selected_hint.text = "Selected for your next match" if game.playing else "Ready for deployment"
 	for choice in range(library_buttons.size()):
 		library_buttons[choice].set_pressed_no_signal(choice == index)
-		library_buttons[choice].add_theme_stylebox_override("pressed", hud.panel(Color("ac1334"), 2, 10))
+		library_buttons[choice].add_theme_stylebox_override("pressed", hud.panel(accent.darkened(0.48), 2, 10))
 
 
 func build_options() -> void:
@@ -311,11 +321,11 @@ func draw_backdrop() -> void:
 	var paper := Color("faf4e8")
 	design.draw_colored_polygon(PackedVector2Array([Vector2(0, 0), Vector2(1030, 0), Vector2(336, 900), Vector2(0, 900)]), black)
 	design.draw_colored_polygon(PackedVector2Array([Vector2(617, 83), Vector2(965, 154), Vector2(1070, 650), Vector2(607, 793), Vector2(468, 525)]), paper)
-	design.draw_colored_polygon(PackedVector2Array([Vector2(635, 112), Vector2(907, 184), Vector2(1003, 620), Vector2(630, 751), Vector2(510, 510)]), Color("c80d30"))
+	design.draw_colored_polygon(PackedVector2Array([Vector2(635, 112), Vector2(907, 184), Vector2(1003, 620), Vector2(630, 751), Vector2(510, 510)]), accent.darkened(0.22))
 	for x in range(500, 1020, 15):
 		for y in range(160, 740, 15):
 			if Geometry2D.is_point_in_polygon(Vector2(x, y), PackedVector2Array([Vector2(635, 112), Vector2(907, 184), Vector2(1003, 620), Vector2(630, 751), Vector2(510, 510)])):
-				design.draw_circle(Vector2(x, y), 2, Color("760b24"))
+				design.draw_circle(Vector2(x, y), 2, accent.darkened(0.65))
 	for ray in [PackedVector2Array([Vector2(570, 315), Vector2(365, 152), Vector2(492, 322)]), PackedVector2Array([Vector2(866, 268), Vector2(1173, 115), Vector2(909, 298)]), PackedVector2Array([Vector2(897, 563), Vector2(1302, 800), Vector2(940, 620)]), PackedVector2Array([Vector2(601, 652), Vector2(345, 834), Vector2(638, 685)])]:
 		design.draw_colored_polygon(ray, paper)
 	design.draw_colored_polygon(PackedVector2Array([Vector2(512, 754), Vector2(936, 726), Vector2(970, 797), Vector2(495, 814)]), black)
@@ -346,3 +356,21 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if destinations.has(event.keycode):
 		open_screen(destinations[event.keycode])
 		get_viewport().set_input_as_handled()
+
+
+func apply_palette(index: int) -> void:
+	accent = PALETTES[index]
+	backdrop.color = accent.darkened(0.15)
+	for button in navigation_buttons.values():
+		button.accent = accent
+		button.queue_redraw()
+	for panel in pages.values():
+		panel.get_theme_stylebox("panel").border_color = accent
+	for node in accent_labels:
+		node.add_theme_color_override("font_color", accent.lightened(0.25))
+	for button in accent_buttons:
+		for state in ["normal", "hover", "pressed", "focus"]:
+			var style: StyleBoxFlat = button.get_theme_stylebox(state)
+			style.bg_color = accent.darkened(0.48) if state != "hover" else accent.darkened(0.35)
+			style.border_color = WHITE
+	design.queue_redraw()
