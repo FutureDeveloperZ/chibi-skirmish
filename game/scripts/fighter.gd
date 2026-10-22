@@ -3,7 +3,9 @@ extends Node3D
 const Rules = preload("res://scripts/match.gd")
 const BLUE := Color("28b8e6")
 const RED := Color("f87978")
+static var pose_cache: Dictionary = {}
 var slot := 0
+var character := -1
 var model: Node3D
 var animation: AnimationPlayer
 var marker: MeshInstance3D
@@ -17,9 +19,24 @@ var death_lift := Curve.new()
 var skin_surfaces: Array[Dictionary] = []
 
 
-func setup(index: int) -> void:
+func setup(index: int, character_index: int = -1) -> void:
 	slot = index
-	var scene = load("res://assets/characters/%s.glb" % Rules.MODELS[slot])
+	set_character(index if character_index < 0 else character_index)
+	marker = make_ring(0.45, 0.055, BLUE if slot < 3 else RED)
+	selection = make_ring(0.61, 0.035, Color("fffef2"))
+	selection.visible = false
+
+
+func set_character(index: int) -> void:
+	if character == index and model:
+		return
+	if model:
+		remove_child(model)
+		model.queue_free()
+	character = clampi(index, 0, Rules.MODELS.size() - 1)
+	current_clip = ""
+	death_lift = Curve.new()
+	var scene = load("res://assets/characters/%s.glb" % Rules.MODELS[character])
 	model = scene.instantiate()
 	add_child(model)
 	var players := model.find_children("*", "AnimationPlayer", true, false)
@@ -29,6 +46,14 @@ func setup(index: int) -> void:
 		for clip in animation.get_animation_list():
 			if clip in ["idle", "run", "walk"]:
 				animation.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
+	if pose_cache.has(character):
+		var cached: Dictionary = pose_cache[character]
+		standing_height = cached.height
+		death_lift = cached.lift
+		model.scale = Vector3.ONE * cached.factor
+		model.position.y = standing_height
+		play("idle")
+		return
 	# Bind-pose mesh AABBs do not describe the animated characters' actual feet.
 	for child in model.find_children("*", "MeshInstance3D", true, false):
 		if not child.skin:
@@ -60,9 +85,7 @@ func setup(index: int) -> void:
 	animation.seek(0.0, true)
 	model.scale = Vector3.ONE * factor
 	model.position.y = standing_height
-	marker = make_ring(0.45, 0.055, BLUE if slot < 3 else RED)
-	selection = make_ring(0.61, 0.035, Color("fffef2"))
-	selection.visible = false
+	pose_cache[character] = {"height": standing_height, "factor": factor, "lift": death_lift}
 	play("idle")
 	skin_surfaces.clear()
 
@@ -106,6 +129,8 @@ func make_ring(radius: float, width: float, color: Color) -> MeshInstance3D:
 
 
 func update_state(actor: Dictionary, delta: float, local: bool) -> void:
+	if actor.get("character", slot) != character:
+		set_character(actor.get("character", slot))
 	target_position = Vector3(actor.p.x, 0, actor.p.y)
 	if not initialized or position.distance_to(target_position) > 4:
 		position = target_position

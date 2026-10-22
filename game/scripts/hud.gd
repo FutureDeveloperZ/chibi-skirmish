@@ -13,11 +13,7 @@ var portraits: Array[Texture2D] = []
 var weapon_icons: Dictionary = {}
 var game: Node3D
 var menu_visible := true
-var menu: PanelContainer
-var status: Label
-var server_address: LineEdit
-var resume: Button
-var restart: Button
+var menu: Control
 var font: Font = preload("res://assets/fonts/Interface.ttf")
 var display_font: Font = preload("res://assets/fonts/Display.ttf")
 
@@ -34,66 +30,9 @@ func setup(owner_game: Node3D) -> void:
 	theme.default_font = font
 	theme.default_font_size = 17
 	self.theme = theme
-	menu = PanelContainer.new()
-	menu.position = Vector2(52, 150)
-	menu.size = Vector2(380, 0)
-	menu.add_theme_stylebox_override("panel", panel(Color(PAPER, 0.97), 2, 28))
+	menu = load("res://scripts/front_menu.gd").new()
 	add_child(menu)
-	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 13)
-	menu.add_child(content)
-	var title := Label.new()
-	title.text = "Chibi\nSkirmish"
-	title.add_theme_font_override("font", display_font)
-	title.add_theme_font_size_override("font_size", 48)
-	title.add_theme_color_override("font_color", INK)
-	content.add_child(title)
-	var subtitle := Label.new()
-	subtitle.text = "Surface combat / Relay yard"
-	subtitle.add_theme_color_override("font_color", MUTED)
-	subtitle.add_theme_font_size_override("font_size", 16)
-	content.add_child(subtitle)
-	var description := Label.new()
-	description.text = "3v3 team deathmatch\nFirst to 20 eliminations in 5 minutes.\nEmpty slots are filled by bots."
-	description.add_theme_color_override("font_color", INK)
-	description.add_theme_font_size_override("font_size", 17)
-	content.add_child(description)
-	resume = button("Resume match", BLUE, func(): show_menu(false))
-	content.add_child(resume)
-	resume.visible = false
-	restart = button("Restart match", BLUE, game.restart_match)
-	content.add_child(restart)
-	restart.visible = false
-	content.add_child(button("Deploy with bots", GOLD, game.practice))
-	content.add_child(button("Host a match", Color("344552"), game.host_match))
-	server_address = LineEdit.new()
-	server_address.text = "ws://127.0.0.1:8910"
-	server_address.placeholder_text = "Server address"
-	server_address.custom_minimum_size.y = 44
-	server_address.add_theme_color_override("font_color", INK)
-	server_address.add_theme_color_override("caret_color", BLUE)
-	server_address.add_theme_stylebox_override("normal", panel(Color("101a22"), 2, 12))
-	server_address.add_theme_stylebox_override("focus", panel(Color("293b48"), 2, 12))
-	server_address.text_submitted.connect(game.join_match)
-	content.add_child(server_address)
-	content.add_child(button("Join a match", Color("344552"), func(): game.join_match(server_address.text)))
-	status = Label.new()
-	status.text = "WASD move · Mouse aim / fire\nQ grenade · Space dodge\nScroll zoom · Esc menu"
-	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	status.custom_minimum_size = Vector2(320, 48)
-	status.add_theme_font_size_override("font_size", 14)
-	status.add_theme_color_override("font_color", MUTED)
-	content.add_child(status)
-	resized.connect(layout_menu)
-	layout_menu()
-
-
-func layout_menu() -> void:
-	if not menu:
-		return
-	var factor := minf(size.x / 1440.0, size.y / 900.0)
-	menu.scale = Vector2.ONE * factor
-	menu.position = Vector2(52 * factor, maxf(26, (size.y - 600 * factor) / 2))
+	menu.setup(self, game)
 
 
 func panel(color: Color, radius: int, padding: int = 0) -> StyleBoxFlat:
@@ -129,15 +68,13 @@ func button(text: String, color: Color, action: Callable) -> Button:
 
 func show_menu(visible_menu: bool) -> void:
 	menu_visible = visible_menu
-	menu.visible = visible_menu
-	resume.visible = game.playing
-	restart.visible = game.playing and game.authority and game.state.winner != -2
+	menu.set_menu_visible(visible_menu)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	queue_redraw()
 
 
 func set_status(message: String) -> void:
-	status.text = message
+	menu.status.text = message
 
 
 func text_at(point: Vector2, text: String, size_px: int, color: Color, bold: bool = false) -> void:
@@ -160,7 +97,7 @@ func card(rect: Rect2, color: Color = PAPER, radius: int = 12) -> void:
 
 
 func _draw() -> void:
-	if not game or game.state.is_empty():
+	if not game or game.state.is_empty() or menu_visible:
 		return
 	var scale_ui := Vector2(size.x / 1440.0, size.y / 900.0)
 	draw_set_transform(Vector2.ZERO, 0, scale_ui)
@@ -182,10 +119,8 @@ func _draw() -> void:
 	card(Rect2(1228, 24, 186, 43))
 	draw_circle(Vector2(1247, 46), 4, BLUE if game.playing else MUTED)
 	text_at(Vector2(1260, 52), game.mode, 16, INK)
-	if menu_visible:
-		text_at(Vector2(1218, 864), "Godot prototype", 15, INK)
-		return
-	draw_minimap(state)
+	if game.preferences.values.minimap:
+		draw_minimap(state)
 	var nameplates: Array[Rect2] = []
 	for index in range(game.fighters.size()):
 		var actor: Dictionary = state.actors[index]
@@ -199,17 +134,19 @@ func _draw() -> void:
 		var color := BLUE if actor.team == 0 else RED
 		draw_style_box(panel(Color("101820"), 2), Rect2(point + Vector2(-25, 0), Vector2(50, 6)))
 		draw_style_box(panel(color, 3), Rect2(point + Vector2(-25, 0), Vector2(maxf(1, 50 * actor.hp / 100), 6)))
-		var name_text: String = Rules.NAMES[index] + (" • You" if index == game.local_slot else "")
+		if not game.preferences.values.names:
+			continue
+		var name_text: String = Rules.NAMES[actor.character] + (" • You" if index == game.local_slot else "")
 		var label_width := font.get_string_size(name_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x + 12
 		draw_style_box(panel(Color(PAPER, 0.94), 4), Rect2(point + Vector2(-label_width / 2, -23), Vector2(label_width, 19)))
 		centered(point + Vector2(0, -9), name_text, 13, INK)
 	var mine: Dictionary = state.actors[maxi(game.local_slot, 0)]
 	card(Rect2(36, 765, 318, 103))
 	draw_rect(Rect2(44, 779, 72, 72), Color("374652"))
-	draw_texture_rect(portraits[maxi(game.local_slot, 0)], Rect2(44, 779, 72, 72), false)
+	draw_texture_rect(portraits[mine.character], Rect2(44, 779, 72, 72), false)
 	draw_line(Vector2(44, 851), Vector2(116, 851), GOLD, 3)
-	text_at(Vector2(126, 798), Rules.NAMES[maxi(game.local_slot, 0)], 22, INK, true)
-	text_at(Vector2(126, 820), WEAPON_NAMES[maxi(game.local_slot, 0)], 13, MUTED)
+	text_at(Vector2(126, 798), Rules.NAMES[mine.character], 22, INK, true)
+	text_at(Vector2(126, 820), WEAPON_NAMES[mine.character], 13, MUTED)
 	draw_style_box(panel(Color("34434e"), 2), Rect2(126, 833, 202, 9))
 	draw_style_box(panel(BLUE if mine.team == 0 else RED, 4), Rect2(126, 833, maxf(1, 202 * mine.hp / 100), 9))
 	text_at(Vector2(126, 861), "%d / 100 HP" % mine.hp, 13, INK)
@@ -224,15 +161,15 @@ func _draw() -> void:
 	for row in range(3):
 		var actor: Dictionary = state.actors[team_start + row]
 		var y := 807.0 + row * 23
-		draw_texture_rect(portraits[team_start + row], Rect2(1128, y - 17, 21, 21), false)
-		text_at(Vector2(1157, y), Rules.NAMES[team_start + row], 14, INK)
+		draw_texture_rect(portraits[actor.character], Rect2(1128, y - 17, 21, 21), false)
+		text_at(Vector2(1157, y), Rules.NAMES[actor.character], 14, INK)
 		text_at(Vector2(1280, y), "Bot" if actor.peer == 0 else "Player", 12, MUTED)
 		text_at(Vector2(1350, y), "%d" % actor.hp, 13, INK)
 	var feed_row := 0
 	for event in state.events:
 		if event.kind == "elimination" and state.elapsed - event.time < 5.0 and feed_row < 4:
 			card(Rect2(1070, 268 + feed_row * 32, 344, 27), Color(PAPER, 0.94), 6)
-			text_at(Vector2(1082, 287 + feed_row * 32), "%s  eliminated  %s" % [Rules.NAMES[event.source], Rules.NAMES[event.target]], 14, INK)
+			text_at(Vector2(1082, 287 + feed_row * 32), "%s  eliminated  %s" % [Rules.NAMES[state.actors[event.source].character], Rules.NAMES[state.actors[event.target].character]], 14, INK)
 			feed_row += 1
 	if mine.hp <= 0 and state.winner == -2:
 		card(Rect2(520, 360, 400, 108))
@@ -258,7 +195,7 @@ func ability(point: Vector2, key: String, label: String, cooldown: float, total:
 	text_at(point + Vector2(12, 27), key, 19, BLUE if cooldown <= 0 else MUTED, true)
 	text_at(point + Vector2(12, 52), label if cooldown <= 0 else "%.1fs" % cooldown, 15, INK)
 	if key in ["LMB", "Q"]:
-		var weapon: String = WEAPONS[maxi(game.local_slot, 0)] if key == "LMB" else "rl"
+		var weapon: String = WEAPONS[game.state.actors[maxi(game.local_slot, 0)].character] if key == "LMB" else "rl"
 		var texture: Texture2D = weapon_icons[weapon]
 		var icon_size := texture.get_size() * minf(42.0 / texture.get_width(), 30.0 / texture.get_height())
 		draw_texture_rect(texture, Rect2(point + Vector2(84, 23) - icon_size / 2, icon_size), false, Color(GOLD if cooldown <= 0 else MUTED))

@@ -27,7 +27,7 @@ def main():
                 time.sleep(0.1)
             for index in range(6):
                 clients.append(subprocess.Popen(
-                    COMMAND + ["--", "--join=ws://127.0.0.1:8910", "--test-client"],
+                    COMMAND + ["--", "--join=ws://127.0.0.1:8910", "--test-client", f"--character={index}"],
                     env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True))
             deadline = time.monotonic() + 3
             while server_log.read_text().count("PLAYER_JOINED") < 6:
@@ -45,6 +45,7 @@ def main():
                     assert client.returncode == 0 and "TEST_CLIENT_OK" in output, output
                     line = next(line for line in output.splitlines() if "TEST_CLIENT_OK" in line)
                     slots.add(int(line.split("slot=")[1].split()[0]))
+                    assert f"character={index}" in line, line
                     print(line)
                 else:
                     assert "PLAYER_ASSIGNED" not in output and client.returncode != 0, output

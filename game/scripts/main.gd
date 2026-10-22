@@ -4,6 +4,7 @@ const Rules = preload("res://scripts/match.gd")
 const Arena = preload("res://scripts/arena.gd")
 const Fighter = preload("res://scripts/fighter.gd")
 const Hud = preload("res://scripts/hud.gd")
+const Preferences = preload("res://scripts/preferences.gd")
 const PORT := 8910
 const SLOT_ORDER := [0, 3, 1, 4, 2, 5]
 
@@ -33,6 +34,8 @@ var capture_path := ""
 var camera_focus := Vector3.ZERO
 var camera_zoom := 21.0
 var round_end_clock := 0.0
+var preferences := Preferences.new()
+var arena: Node3D
 
 
 func _ready() -> void:
@@ -40,6 +43,12 @@ func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	dedicated = "--server" in args
 	test_client = "--test-client" in args
+	if not headless:
+		preferences.read()
+		camera_zoom = preferences.values.camera_zoom
+	for arg in args:
+		if arg.begins_with("--character=") and arg.trim_prefix("--character=").is_valid_int():
+			preferences.values.character = clampi(int(arg.trim_prefix("--character=")), 0, Rules.MODELS.size() - 1)
 	multiplayer.server_relay = false
 	setup_input()
 	multiplayer.peer_connected.connect(on_peer_connected)
@@ -49,7 +58,8 @@ func _ready() -> void:
 	multiplayer.server_disconnected.connect(func(): connection_error("The host disconnected. You can start practice or join another match."))
 	state = simulation.snapshot()
 	if not headless and not dedicated:
-		add_child(Arena.new())
+		arena = Arena.new()
+		add_child(arena)
 		camera = Camera3D.new()
 		camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 		camera.size = camera_zoom
@@ -67,6 +77,7 @@ func _ready() -> void:
 		hud = Hud.new()
 		layer.add_child(hud)
 		hud.setup(self)
+		apply_preferences()
 	if dedicated:
 		host_match(true)
 	else:
@@ -99,6 +110,7 @@ func practice() -> void:
 	close_network()
 	simulation = Rules.new()
 	simulation.actors[0].peer = 1
+	simulation.actors[0].character = preferences.values.character
 	local_slot = 0
 	mode = "Practice"
 	playing = true
@@ -123,6 +135,7 @@ func host_match(server_only: bool = false) -> void:
 	if not server_only:
 		peer_slots[1] = 0
 		simulation.actors[0].peer = 1
+		simulation.actors[0].character = preferences.values.character
 	state = simulation.snapshot()
 	print("SERVER_READY port=%d" % PORT)
 	if hud:
@@ -209,9 +222,36 @@ func assign_slot(slot: int) -> void:
 	local_slot = slot
 	playing = true
 	mode = "Online"
+	request_character.rpc_id(1, preferences.values.character)
 	print("PLAYER_ASSIGNED slot=%d" % slot)
 	if hud:
 		hud.show_menu(false)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func request_character(index: int) -> void:
+	var sender := multiplayer.get_remote_sender_id()
+	if authority and peer_slots.has(sender) and index >= 0 and index < Rules.MODELS.size():
+		simulation.actors[peer_slots[sender]].character = index
+
+
+func select_character(index: int) -> void:
+	preferences.values.character = clampi(index, 0, Rules.MODELS.size() - 1)
+	save_preferences()
+
+
+func save_preferences() -> void:
+	if preferences.save() != OK and hud:
+		hud.set_status("Could not save preferences. This selection will last for this session.")
+
+
+func apply_preferences() -> void:
+	camera_zoom = preferences.values.camera_zoom
+	if arena:
+		for light in arena.find_children("*", "DirectionalLight3D", true, false):
+			light.shadow_enabled = preferences.values.shadows
+	if not headless:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if preferences.values.fullscreen else DisplayServer.WINDOW_MODE_WINDOWED)
 
 
 @rpc("any_peer", "call_remote", "reliable")
@@ -276,8 +316,8 @@ func _physics_process(delta: float) -> void:
 	if test_client:
 		test_clock += delta
 		if test_clock > 4.0:
-			if local_slot >= 0 and snapshots_received > 20:
-				print("TEST_CLIENT_OK slot=%d snapshots=%d" % [local_slot, snapshots_received])
+			if local_slot >= 0 and snapshots_received > 20 and state.actors[local_slot].character == preferences.values.character:
+				print("TEST_CLIENT_OK slot=%d snapshots=%d character=%d" % [local_slot, snapshots_received, state.actors[local_slot].character])
 				get_tree().quit(0)
 			else:
 				push_error("TEST_CLIENT_FAILED assignment or state missing")
@@ -316,10 +356,15 @@ func restart_match() -> void:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel") and hud:
-		hud.show_menu(not hud.menu_visible)
+		if hud.menu_visible and hud.menu.screen != "home":
+			hud.menu.open_screen("home")
+		else:
+			hud.show_menu(not hud.menu_visible)
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if hud and hud.menu_visible:
+		return
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			camera_zoom = maxf(16.0, camera_zoom - 1.0)
@@ -332,6 +377,8 @@ func _process(delta: float) -> void:
 		return
 	for index in range(fighters.size()):
 		fighters[index].update_state(state.actors[index], delta, index == local_slot)
+		fighters[index].visible = not hud.menu_visible
+	arena.visible = not hud.menu_visible
 	var focus_target := Vector3.ZERO
 	if local_slot >= 0:
 		focus_target = fighters[local_slot].position

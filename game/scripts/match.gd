@@ -45,8 +45,10 @@ func _init() -> void:
 
 func reset() -> void:
 	var peers: Array[int] = []
+	var characters: Array[int] = []
 	for actor in actors:
 		peers.append(actor.peer)
+		characters.append(actor.character)
 	actors.clear()
 	bullets.clear()
 	events.clear()
@@ -56,6 +58,7 @@ func reset() -> void:
 	winner = -2
 	for slot in range(6):
 		actors.append({"slot": slot, "peer": peers[slot] if peers.size() == 6 else 0,
+			"character": characters[slot] if characters.size() == 6 else slot,
 			"team": slot / 3, "p": spawn(slot), "move": Vector2.ZERO,
 			"aim": Vector2.RIGHT if slot < 3 else Vector2.LEFT,
 			"hp": MAX_HP, "respawn": 0.0, "protection": 1.5,
