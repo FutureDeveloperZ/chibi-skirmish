@@ -1,0 +1,23 @@
+game/scripts/fighter.gd
+  s_6c9630ea4f8623::t_886dd6351cccfa 13-17,47-50,58,156,159-160,166-177,189-222
+game/scripts/front_menu.gd
+  s_6c9630ea4f8623::t_c46bf23a75c5da 252
+game/tests/test_fighter_pose.gd
+  s_6c9630ea4f8623::t_612898be1906ac 53-54,56-85
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "40e6275811196a0d6a28fa48dbdd10455a7b2907",
+  "prompts": {},
+  "sessions": {
+    "s_6c9630ea4f8623": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15edb-c012-7df0-85d1-0a6b5171a1df",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Wolfkid200444 <32025746+Wolfkid200444@users.noreply.github.com>"
+    }
+  }
+}
