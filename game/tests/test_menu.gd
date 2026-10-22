@@ -38,6 +38,16 @@ func run() -> void:
 	check(game.state.elapsed > before and not game.playing, "An offline bot match must run behind the menu")
 	check(game.arena.visible and game.fighters[0].visible, "The spectator backdrop must render the arena and fighters")
 	check(menu.visible and menu.screen == "home", "The home menu must open on launch")
+	var start_button: Button = menu.navigation_buttons.start
+	var initial_position := start_button.position
+	await create_timer(0.25).timeout
+	check(start_button.position.distance_to(initial_position) > 0.1, "Menu banners must gently float")
+	var hover := InputEventMouseMotion.new()
+	hover.position = start_button.get_global_transform_with_canvas() * (start_button.size / 2)
+	root.push_input(hover, true)
+	await create_timer(0.3).timeout
+	check(start_button.scale.x > 1.02, "Hovered banners must lift and enlarge")
+	check(game.spectator_clock > 0.0, "The menu spectator camera must animate")
 	check(menu.library_buttons.size() == 6, "The library must expose six playable operators")
 	check(menu.navigation_buttons.start.rotation_degrees > 0 and menu.navigation_buttons.credits.rotation_degrees < 0, "Navigation must fan diagonally around the character")
 	for page in ["start", "options", "credits", "library"]:

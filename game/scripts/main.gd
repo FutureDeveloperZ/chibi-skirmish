@@ -31,6 +31,7 @@ var snapshots_received := 0
 var test_client := false
 var test_clock := 0.0
 var capture_path := ""
+var spectator_clock := 0.0
 var camera_focus := Vector3.ZERO
 var camera_zoom := 21.0
 var round_end_clock := 0.0
@@ -388,6 +389,7 @@ func _process(delta: float) -> void:
 		fighters[index].update_state(state.actors[index], delta, index == local_slot)
 	var focus_target := Vector3.ZERO
 	if hud.menu_visible:
+		spectator_clock += delta
 		for fighter in fighters:
 			focus_target += fighter.position
 		focus_target /= fighters.size()
@@ -399,6 +401,8 @@ func _process(delta: float) -> void:
 		focus_target.z = clampf(focus_target.z, -12.5, 12.5)
 	camera_focus = camera_focus.lerp(focus_target, 1.0 - exp(-7.0 * delta))
 	camera.position = camera_focus + (Vector3(3.0, 38.0, 19.0) if hud.menu_visible else Vector3(3.0, 25.0, 21.5))
+	if hud.menu_visible:
+		camera.position += Vector3(sin(spectator_clock * 0.13) * 5.0, sin(spectator_clock * 0.19) * 1.5, cos(spectator_clock * 0.13) * 3.0)
 	camera.look_at(camera_focus)
 	camera.size = lerpf(camera.size, 32.0 if hud.menu_visible else camera_zoom, 1.0 - exp(-8.0 * delta))
 	update_projectiles(delta)

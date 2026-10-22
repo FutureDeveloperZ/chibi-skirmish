@@ -49,7 +49,11 @@ void fragment() {
 	float gray = dot(scene, vec3(0.299, 0.587, 0.114));
 	scene = mix(vec3(gray), scene, 0.75) * 0.62;
 	bool spectator_area = UV.x * 1440.0 < 1030.0 - UV.y * 694.0;
-	COLOR = spectator_area ? vec4(scene, 1.0) : accent_color;
+	float diagonal = UV.x * 1.2 + UV.y * 0.6 - TIME * 0.025;
+	float streak = pow(max(0.0, sin(diagonal * 22.0)), 30.0);
+	float sweep = pow(max(0.0, sin(diagonal * 4.5)), 12.0);
+	vec3 animated_accent = accent_color.rgb * (0.94 + streak * 0.08 + sweep * 0.09);
+	COLOR = spectator_area ? vec4(scene, 1.0) : vec4(animated_accent, 1.0);
 }
 """
 	var spectator_material := ShaderMaterial.new()
