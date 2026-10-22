@@ -1,0 +1,23 @@
+game/scripts/front_menu.gd
+  s_6c9630ea4f8623::t_3d229c63448866 41-58,106-107,380
+game/scripts/main.gd
+  s_6c9630ea4f8623::t_96bd450666e17f 281-289,390-396,401,403
+game/tests/test_menu.gd
+  s_6c9630ea4f8623::t_d9304ce7410a31 36-39,60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "40de16013598cf428c564c167e6e44984edb8392",
+  "prompts": {},
+  "sessions": {
+    "s_6c9630ea4f8623": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15edb-c012-7df0-85d1-0a6b5171a1df",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Wolfkid200444 <32025746+Wolfkid200444@users.noreply.github.com>"
+    }
+  }
+}
