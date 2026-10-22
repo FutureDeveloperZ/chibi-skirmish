@@ -1,0 +1,27 @@
+game/assets/fonts/Menu.ttf.import
+  s_6c9630ea4f8623::t_4c11d77cdfd595 1-36
+game/scripts/front_menu.gd
+  s_6c9630ea4f8623::t_3983cdf7d0e5d1 5,7,36,45-51,53-55,58,61,91,113-114,119,152,157-158,182,184,189-190,194,203,226,310-348
+game/scripts/menu_banner.gd
+  s_6c9630ea4f8623::t_4223cffab865cc 1-29
+game/scripts/menu_banner.gd.uid
+  s_6c9630ea4f8623::t_e951fc9049dc67 1
+game/tests/test_menu.gd
+  s_6c9630ea4f8623::t_21c3e18c1e6f61 43-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "45b9faa87ce347c99f61fd95215c912d9d40c97b",
+  "prompts": {},
+  "sessions": {
+    "s_6c9630ea4f8623": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15edb-c012-7df0-85d1-0a6b5171a1df",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Wolfkid200444 <32025746+Wolfkid200444@users.noreply.github.com>"
+    }
+  }
+}
