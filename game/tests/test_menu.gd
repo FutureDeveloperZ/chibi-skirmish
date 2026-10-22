@@ -40,6 +40,13 @@ func run() -> void:
 		menu.open_screen("home")
 		await click(menu.navigation_buttons[page])
 		check(menu.screen == page, "The transformed %s button must accept clicks" % page)
+	menu.open_screen("home")
+	var shortcut := InputEventKey.new()
+	shortcut.keycode = KEY_4
+	shortcut.pressed = true
+	root.push_input(shortcut, true)
+	await process_frame
+	check(menu.screen == "library", "Number badges must open the corresponding menu")
 	menu.open_screen("library")
 	check(menu.pages.library.visible and not menu.pages.options.visible, "Library navigation must show only its page")
 	for character in range(6):
