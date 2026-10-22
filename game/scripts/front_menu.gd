@@ -38,8 +38,24 @@ func setup(owner_hud: Control, owner_game: Node3D) -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	backdrop = ColorRect.new()
-	backdrop.color = Color("d80d32")
-	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color.WHITE
+	var spectator_shader := Shader.new()
+	spectator_shader.code = """shader_type canvas_item;
+render_mode unshaded;
+uniform sampler2D match_view : hint_screen_texture, repeat_disable, filter_linear_mipmap;
+uniform vec4 accent_color : source_color = vec4(0.85, 0.05, 0.2, 1.0);
+void fragment() {
+	vec3 scene = textureLod(match_view, SCREEN_UV, 1.8).rgb;
+	float gray = dot(scene, vec3(0.299, 0.587, 0.114));
+	scene = mix(vec3(gray), scene, 0.75) * 0.62;
+	bool spectator_area = UV.x * 1440.0 < 1030.0 - UV.y * 694.0;
+	COLOR = spectator_area ? vec4(scene, 1.0) : accent_color;
+}
+"""
+	var spectator_material := ShaderMaterial.new()
+	spectator_material.shader = spectator_shader
+	backdrop.material = spectator_material
+	backdrop.size = Vector2(1440, 900)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(backdrop)
 	design = Control.new()
@@ -87,6 +103,8 @@ func layout() -> void:
 	var factor := minf(size.x / 1440.0, size.y / 900.0)
 	design.scale = Vector2.ONE * factor
 	design.position = (size - Vector2(1440, 900) * factor) / 2
+	backdrop.scale = design.scale
+	backdrop.position = design.position
 
 
 func label(parent: Node, text: String, point: Vector2, size_px: int, color: Color, bold := false) -> Label:
@@ -319,7 +337,6 @@ func _process(delta: float) -> void:
 func draw_backdrop() -> void:
 	var black := Color("09090d")
 	var paper := Color("faf4e8")
-	design.draw_colored_polygon(PackedVector2Array([Vector2(0, 0), Vector2(1030, 0), Vector2(336, 900), Vector2(0, 900)]), black)
 	design.draw_colored_polygon(PackedVector2Array([Vector2(617, 83), Vector2(965, 154), Vector2(1070, 650), Vector2(607, 793), Vector2(468, 525)]), paper)
 	design.draw_colored_polygon(PackedVector2Array([Vector2(635, 112), Vector2(907, 184), Vector2(1003, 620), Vector2(630, 751), Vector2(510, 510)]), accent.darkened(0.22))
 	for x in range(500, 1020, 15):
@@ -360,7 +377,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 func apply_palette(index: int) -> void:
 	accent = PALETTES[index]
-	backdrop.color = accent.darkened(0.15)
+	backdrop.material.set_shader_parameter("accent_color", accent.darkened(0.15))
 	for button in navigation_buttons.values():
 		button.accent = accent
 		button.queue_redraw()

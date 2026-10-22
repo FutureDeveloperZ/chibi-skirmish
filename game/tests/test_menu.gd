@@ -33,6 +33,10 @@ func run() -> void:
 	root.add_child(game)
 	await process_frame
 	var menu = game.hud.menu
+	var before: float = game.state.elapsed
+	await create_timer(0.2).timeout
+	check(game.state.elapsed > before and not game.playing, "An offline bot match must run behind the menu")
+	check(game.arena.visible and game.fighters[0].visible, "The spectator backdrop must render the arena and fighters")
 	check(menu.visible and menu.screen == "home", "The home menu must open on launch")
 	check(menu.library_buttons.size() == 6, "The library must expose six playable operators")
 	check(menu.navigation_buttons.start.rotation_degrees > 0 and menu.navigation_buttons.credits.rotation_degrees < 0, "Navigation must fan diagonally around the character")
@@ -53,7 +57,7 @@ func run() -> void:
 		menu.library_buttons[character].pressed.emit()
 		await process_frame
 		check(game.preferences.values.character == character, "Library click must update the selected character")
-		check(menu.accent == menu.PALETTES[character] and menu.backdrop.color == menu.accent.darkened(0.15), "Character selection must recolor the backdrop")
+		check(menu.accent == menu.PALETTES[character] and menu.backdrop.material.get_shader_parameter("accent_color") == menu.accent.darkened(0.15), "Character selection must recolor the backdrop")
 		check(menu.navigation_buttons.start.accent == menu.accent, "Menu banners must use the selected character palette")
 		check(menu.preview.character == character, "Library click must update the 3D preview")
 		check(menu.selected_name.text == game.Rules.NAMES[character], "The preview name must match the model")

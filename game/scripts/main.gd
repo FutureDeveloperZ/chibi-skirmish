@@ -278,6 +278,15 @@ func receive_state(snapshot: Dictionary) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	# An offline attract match runs with six bots until the player deploys.
+	if authority and not playing and not dedicated and mode == "Practice" and hud:
+		simulation.step(delta, {})
+		if simulation.winner != -2:
+			round_end_clock += delta
+			if round_end_clock > 8.0:
+				simulation.reset()
+				round_end_clock = 0.0
+		state = simulation.snapshot()
 	if authority and playing:
 		if dedicated and peer_slots.is_empty():
 			round_end_clock = 0.0
@@ -377,17 +386,21 @@ func _process(delta: float) -> void:
 		return
 	for index in range(fighters.size()):
 		fighters[index].update_state(state.actors[index], delta, index == local_slot)
-		fighters[index].visible = not hud.menu_visible
-	arena.visible = not hud.menu_visible
 	var focus_target := Vector3.ZERO
-	if local_slot >= 0:
+	if hud.menu_visible:
+		for fighter in fighters:
+			focus_target += fighter.position
+		focus_target /= fighters.size()
+		# Place the action in the exposed left side of the menu.
+		focus_target += Vector3(9.0, 0.0, 0.0)
+	elif local_slot >= 0:
 		focus_target = fighters[local_slot].position
 		focus_target.x = clampf(focus_target.x, -21, 21)
 		focus_target.z = clampf(focus_target.z, -12.5, 12.5)
 	camera_focus = camera_focus.lerp(focus_target, 1.0 - exp(-7.0 * delta))
-	camera.position = camera_focus + Vector3(3.0, 25.0, 21.5)
+	camera.position = camera_focus + (Vector3(3.0, 38.0, 19.0) if hud.menu_visible else Vector3(3.0, 25.0, 21.5))
 	camera.look_at(camera_focus)
-	camera.size = lerpf(camera.size, camera_zoom, 1.0 - exp(-8.0 * delta))
+	camera.size = lerpf(camera.size, 32.0 if hud.menu_visible else camera_zoom, 1.0 - exp(-8.0 * delta))
 	update_projectiles(delta)
 	for event in state.events:
 		if event.id > last_event:
